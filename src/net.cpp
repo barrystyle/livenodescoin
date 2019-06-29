@@ -19,7 +19,7 @@
 #include "obfuscation.h"
 #include "primitives/transaction.h"
 #include "ui_interface.h"
-#include "wallet.h"
+#include "wallet/wallet.h"
 
 #ifdef WIN32
 #include <string.h>
@@ -220,7 +220,7 @@ bool IsPeerAddrLocalGood(CNode* pnode)
 }
 
 // pushes our own address to a peer
-void AdvertiseLocal(CNode* pnode)
+void AdvertizeLocal(CNode* pnode)
 {
     if (fListen && pnode->fSuccessfullyConnected) {
         CAddress addrLocal = GetLocalAddress(&pnode->addr);
@@ -571,7 +571,7 @@ void CNode::copyStats(CNodeStats& stats)
         nPingUsecWait = GetTimeMicros() - nPingUsecStart;
     }
 
-    // Raw ping time is in microseconds, but show it to user as whole seconds (LivenodesCoin users should be well used to small numbers with many decimal places by now :)
+    // Raw ping time is in microseconds, but show it to user as whole seconds (PIVX users should be well used to small numbers with many decimal places by now :)
     stats.dPingTime = (((double)nPingUsecTime) / 1e6);
     stats.dPingWait = (((double)nPingUsecWait) / 1e6);
 
@@ -1231,9 +1231,6 @@ void ThreadOpenConnections()
 
         int nTries = 0;
         while (true) {
-
-            MilliSleep(100);
-
             CAddress addr = addrman.Select();
 
             // if we selected an invalid address, restart
@@ -1369,30 +1366,25 @@ void ThreadMessageHandler()
     boost::mutex condition_mutex;
     boost::unique_lock<boost::mutex> lock(condition_mutex);
 
-    static int64_t nLastRebroadcast = 0;
-
     SetThreadPriority(THREAD_PRIORITY_BELOW_NORMAL);
     while (true) {
         vector<CNode*> vNodesCopy;
         {
             LOCK(cs_vNodes);
             vNodesCopy = vNodes;
-            for (CNode* pnode : vNodesCopy) {
+            BOOST_FOREACH (CNode* pnode, vNodesCopy) {
                 pnode->AddRef();
             }
         }
 
         // Poll the connected nodes for messages
-        CNode* pnodeTrickle = nullptr;
+        CNode* pnodeTrickle = NULL;
         if (!vNodesCopy.empty())
             pnodeTrickle = vNodesCopy[GetRand(vNodesCopy.size())];
 
         bool fSleep = true;
 
-        bool performRebroadcast = !IsInitialBlockDownload() && (GetTime() - nLastRebroadcast > 24 * 60 * 60);
-
-        for (CNode* pnode : vNodesCopy) {
-
+        BOOST_FOREACH (CNode* pnode, vNodesCopy) {
             if (pnode->fDisconnect)
                 continue;
 
@@ -1415,30 +1407,16 @@ void ThreadMessageHandler()
             // Send messages
             {
                 TRY_LOCK(pnode->cs_vSend, lockSend);
-
-                if(lockSend) {
-
+                if (lockSend)
                     g_signals.SendMessages(pnode, pnode == pnodeTrickle || pnode->fWhitelisted);
-
-                    if(performRebroadcast) {
-
-                        // Periodically clear setAddrKnown to allow refresh broadcasts
-                        if (nLastRebroadcast)
-                            pnode->setAddrKnown.clear();
-
-                        // Rebroadcast our address
-                        AdvertiseLocal(pnode);
-
-                        nLastRebroadcast = GetTime();
-                    }
-                }
             }
             boost::this_thread::interruption_point();
         }
 
+
         {
             LOCK(cs_vNodes);
-            for (CNode* pnode : vNodesCopy)
+            BOOST_FOREACH (CNode* pnode, vNodesCopy)
                 pnode->Release();
         }
 
@@ -1766,7 +1744,7 @@ void RelayInv(CInv& inv)
 {
     LOCK(cs_vNodes);
     BOOST_FOREACH (CNode* pnode, vNodes){
-        if((pnode->nServices==NODE_BLOOM_WITHOUT_MN) && inv.IsMasterNodeType())continue;
+    		if((pnode->nServices==NODE_BLOOM_WITHOUT_MN) && inv.IsMasterNodeType())continue;
         if (pnode->nVersion >= ActiveProtocol())
             pnode->PushInventory(inv);
     }

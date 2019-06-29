@@ -148,41 +148,6 @@ public:
         genesis.nNonce = 677809;
 
         hashGenesisBlock = genesis.GetHash();
-
-        /*
-        printf("coin genesis.nTime = %u \n", genesis.nTime);
-        printf("coin genesis.nNonce = %u \n", genesis.nNonce);
-        printf("coin genesis.GetHash = %s\n", hashGenesisBlock.ToString().c_str());
-        printf("coin Gensis Hash Merkle: %s\n\n", genesis.hashMerkleRoot.ToString().c_str());
-
-        uint256 hashTarget = uint256().SetCompact(genesis.nBits);
-        uint256 thash;
-
-        while(true)
-        {
-            //thash = scrypt_blockhash(BEGIN(genesis.nVersion));
-            thash = Hash9(BEGIN(genesis.nVersion), END(genesis.nNonce));
-            if (thash <= hashTarget)
-                break;
-            if ((genesis.nNonce & 0xFFF) == 0)
-            {
-                printf("nonce %08X: hash = %s (target = %s)\n", genesis.nNonce, thash.ToString().c_str(), hashTarget.ToString().c_str());
-            }
-            ++genesis.nNonce;
-            if (genesis.nNonce == 0)
-            {
-                printf("NONCE WRAPPED, incrementing time\n");
-                ++genesis.nTime;
-            }
-        }
-
-        printf("genesis.nTime = %u \n", genesis.nTime);
-        printf("genesis.nNonce = %u \n", genesis.nNonce);
-        printf("genesis.GetHash = %s\n", genesis.GetHash().ToString().c_str());
-        printf("Gensis Hash Merkle: %s\n", genesis.hashMerkleRoot.ToString().c_str());
-        assert(false);
-        */
-
         assert(hashGenesisBlock == uint256("000005e5c00c68a4216e7aa53b2896177590cba3e98030b25434d3fc0d244267"));
         assert(genesis.hashMerkleRoot == uint256("50ef9e7c0f8ecd7aeffe97edd82036db80e094982ae5ea504d82fe883a22e904"));
 
@@ -202,6 +167,7 @@ public:
 
         fRequireRPCPassword = true;
         fMiningRequiresPeers = true;
+        fAllowMinDifficultyBlocks = false;
         fDefaultConsistencyChecks = true;
         fRequireStandard = true;
         fMineBlocksOnDemand = false;
@@ -313,9 +279,7 @@ public:
         pchMessageStart[1] = 0xcf;
         pchMessageStart[2] = 0x7e;
         pchMessageStart[3] = 0xac;
-
         bnStartWork = ~uint256(0) >> 20;
-
         nEnforceBlockUpgradeMajority = 750;
         nRejectBlockOutdatedMajority = 950;
         nToCheckBlockUpgradeMajority = 1000;
@@ -328,7 +292,6 @@ public:
 
         hashGenesisBlock = genesis.GetHash();
         nDefaultPort = 51476;
-
         //assert(hashGenesisBlock == uint256("300552a9db8b2921c3c07e5bbf8694df5099db579742e243daeaf5008b1e74de"));
 
         vFixedSeeds.clear(); //! Testnet mode doesn't have any fixed seeds.
@@ -336,6 +299,7 @@ public:
 
         fRequireRPCPassword = false;
         fMiningRequiresPeers = false;
+        fAllowMinDifficultyBlocks = true;
         fDefaultConsistencyChecks = true;
         fRequireStandard = false;
         fMineBlocksOnDemand = true;
@@ -365,9 +329,8 @@ public:
         fRequireRPCPassword = false;
         fMiningRequiresPeers = false;
         fDefaultConsistencyChecks = true;
+        fAllowMinDifficultyBlocks = false;
         fMineBlocksOnDemand = true;
-
-
     }
 
     const Checkpoints::CCheckpointData& Checkpoints() const
@@ -377,10 +340,12 @@ public:
     }
 
     //! Published setters to allow changing values in unit test cases
+    virtual void setSubsidyHalvingInterval(int anSubsidyHalvingInterval) { nSubsidyHalvingInterval = anSubsidyHalvingInterval; }
     virtual void setEnforceBlockUpgradeMajority(int anEnforceBlockUpgradeMajority) { nEnforceBlockUpgradeMajority = anEnforceBlockUpgradeMajority; }
     virtual void setRejectBlockOutdatedMajority(int anRejectBlockOutdatedMajority) { nRejectBlockOutdatedMajority = anRejectBlockOutdatedMajority; }
     virtual void setToCheckBlockUpgradeMajority(int anToCheckBlockUpgradeMajority) { nToCheckBlockUpgradeMajority = anToCheckBlockUpgradeMajority; }
     virtual void setDefaultConsistencyChecks(bool afDefaultConsistencyChecks) { fDefaultConsistencyChecks = afDefaultConsistencyChecks; }
+    virtual void setAllowMinDifficultyBlocks(bool afAllowMinDifficultyBlocks) { fAllowMinDifficultyBlocks = afAllowMinDifficultyBlocks; }
     virtual void setSkipProofOfWorkCheck(bool afSkipProofOfWorkCheck) { fSkipProofOfWorkCheck = afSkipProofOfWorkCheck; }
 };
 static CUnitTestParams unitTestParams;
